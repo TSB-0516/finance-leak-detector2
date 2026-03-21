@@ -1,21 +1,21 @@
-def detect_type(desc):
-    desc = desc.lower()
+def detect_type(amount):
+    return "debit" if amount < 0 else "credit"
 
-    if " cr" in desc or "credited" in desc:
-        return "credit"
-
-    if " dr" in desc or "debited" in desc:
-        return "debit"
-
-    # fallback: UPI usually debit unless salary/refund
-    if "salary" in desc or "refund" in desc or "neft cr" in desc:
-        return "credit"
-
-    return "debit"
 def clean_data(transactions):
     cleaned = []
 
     for t in transactions:
+
+        # ❌ skip invalid objects
+        if not isinstance(t, dict):
+            print("SKIPPING INVALID OBJECT:", t, type(t))
+            continue
+
+        # ❌ skip malformed transactions
+        if "description" not in t or "amount" not in t or "date" not in t:
+            print("SKIPPING MALFORMED:", t)
+            continue
+        
         try:
             desc = t["description"].lower()
 
@@ -24,7 +24,8 @@ def clean_data(transactions):
                 continue
 
             # 🔹 detect type
-            txn_type = detect_type(desc)
+            amount= float(t["amount"])
+            txn_type = detect_type(amount)
             cleaned.append({
                 "date": t["date"],
                 "description": desc,

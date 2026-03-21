@@ -62,6 +62,10 @@ def analyze(transactions):
         if data["category"] == "Shopping":
             continue
 
+        # ❌ skip ATM
+        if "atm" in merchant:
+            continue
+
         recurring.append({
             "merchant": merchant,
             "count": count,
@@ -70,5 +74,7 @@ def analyze(transactions):
 
     return {
         "category_totals": category_totals,
-        "recurring": recurring
+        "recurring": recurring,
+        "total_transactions":len(transactions),
+        "transactions_sample":transactions[:200]
     }

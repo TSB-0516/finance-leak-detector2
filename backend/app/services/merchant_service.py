@@ -4,28 +4,35 @@ def get_category_from_db(merchant):
     conn = get_connection()
     cursor = conn.cursor()
 
-    words = merchant.split()
+    cursor.execute(
+        "SELECT category FROM merchants WHERE name = ?",
+        (merchant,)
+    )
 
-    for word in words:
-        cursor.execute(
-            "SELECT category FROM merchants WHERE name LIKE ?",
-            (f"%{word}%",)
-        )
-        result = cursor.fetchone()
-        if result:
-            conn.close()
-            return result["category"]
-
+    result = cursor.fetchone()
     conn.close()
+
+    if result:
+        return result["category"]
+
     return None
     
 def save_merchant_if_valid(merchant, category):
-    # ❌ Reject garbage merchants
+
     if not merchant or len(merchant) < 3:
         return
 
-    invalid_words = ["upi", "to", "ref", "payment", "txn"]
-    if merchant in invalid_words:
+    # ❌ reject people names
+    if "." in merchant:
+        return
+
+    # ❌ reject garbage patterns
+    invalid_words = ["upi", "to", "ref", "payment", "txn", "transfer"]
+    if any(word in merchant for word in invalid_words):
+        return
+
+    # ❌ DO NOT save "Others"
+    if category == "Others":
         return
 
     conn = get_connection()
@@ -38,6 +45,6 @@ def save_merchant_if_valid(merchant, category):
         )
         conn.commit()
     except:
-        pass  # already exists
+        pass
 
     conn.close()

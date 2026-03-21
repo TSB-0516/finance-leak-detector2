@@ -60,5 +60,39 @@ def extract_merchant(description):
         return "electricity"
     if "rent" in merchant:
         return "rent"
+    
+    if "mcdonald" in merchant:
+        return "mcdonald"
+
+    if "burger king" in merchant:
+        return "burger king"
+
+    if "pizza hut" in merchant:
+        return "pizza hut"
+
+    if "dominos" in merchant:
+        return "dominos"
+
+    if "chai point" in merchant:
+        return "chai point"
+
+    if "maggi point" in merchant:
+        return "maggi point"
+
+    if "canteen" in merchant:
+        return "canteen"
+
+    if "udemy" in merchant:
+        return "udemy"
+
+    if "stationary" in merchant:
+        return "stationary"
+
+    # ❌ filter garbage merchants
+    if len(merchant.strip()) < 3:
+        return "unknown"
+
+    if "txn" in merchant or "hdfc atm" in merchant:
+        return "atm"
 
     return merchant
