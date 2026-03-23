@@ -44,7 +44,8 @@ def analyze(transactions):
     recurring = []
 
     for merchant, data in recurring_map.items():
-
+        if data["category"] not in ["Subscription", "Financial", "Bills"]:
+            continue
         count = data["count"]
 
         # ❗ minimum frequency
@@ -56,6 +57,15 @@ def analyze(transactions):
 
         # ❗ avoid same-day bursts
         if span_days < 7:
+            continue
+        
+        amounts = data["amounts"]
+
+        avg = sum(amounts) / len(amounts)
+        if avg == 0:
+            continue
+        # allow ±20% variation
+        if not all(abs(a - avg) / avg < 0.2 for a in amounts):
             continue
 
         # ❗ filter noise (shopping)
@@ -76,5 +86,5 @@ def analyze(transactions):
         "category_totals": category_totals,
         "recurring": recurring,
         "total_transactions":len(transactions),
-        "transactions_sample":transactions[:200]
+        "all_transactions":transactions
     }

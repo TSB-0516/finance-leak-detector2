@@ -88,6 +88,15 @@ def extract_merchant(description):
     if "stationary" in merchant:
         return "stationary"
 
+    if "mpokket" in merchant:
+        return "mpokket"
+
+    if "slice" in merchant:
+        return "slice"
+
+    if "kreditbee" in merchant:
+        return "kreditbee"
+
     # ❌ filter garbage merchants
     if len(merchant.strip()) < 3:
         return "unknown"

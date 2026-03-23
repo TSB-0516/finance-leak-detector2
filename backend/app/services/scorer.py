@@ -19,14 +19,15 @@ def calculate_score(analysis):
         spend("Food") +
         spend("Shopping") +
         spend("Subscription") +
-        spend("Cash Withdrawal") +
         spend("Others")
     )
 
     transfer = spend("Transfer")
 
     total_spend = essential + discretionary  # exclude transfer
+    total_transactions = analysis.get("total_transactions", 0)
 
+    
     if total_spend == 0:
         return 0
 
@@ -41,7 +42,8 @@ def calculate_score(analysis):
     # -----------------------------
 
     score = 0
-
+    if total_transactions < 50:
+        score *= 0.7
     # High discretionary spending
     score += discretionary_ratio * 60
 
@@ -49,7 +51,7 @@ def calculate_score(analysis):
     score += min(spend("Subscription") / 100, 20)
 
     # Cash withdrawal penalty (untracked money)
-    score += min(spend("Cash Withdrawal") / 500, 20)
+    score += min(spend("Cash Withdrawal") / 2000, 10)
 
     # -----------------------------
     return int(min(score, 100))

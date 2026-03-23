@@ -12,6 +12,19 @@ def is_person_name(merchant):
             return True
     return False
 
+def is_transfer(desc, merchant):
+    if "upi" in desc:
+        words = desc.split()
+
+        # short description + no business keywords
+        if len(words) <= 4 and not any(w in desc for w in ["store", "mart", "cafe", "hotel", "restaurant"]):
+            return True
+
+    if is_person_name(merchant):
+        return True
+
+    return False
+
 
 # --------------------------------------
 # SINGLE TRANSACTION CLASSIFIER
@@ -19,44 +32,73 @@ def is_person_name(merchant):
 
 def classify_transaction(desc, merchant, amount):
 
+    REFUND_KEYWORDS = ["refund", "reversal", "cashback"]
+
     desc = desc.lower()
     merchant = merchant.lower()
+    if any(word in desc for word in REFUND_KEYWORDS):
+        return "Income"
+
+    if "restaurant" in desc or "hotel" in desc:
+        return "Food"
 
     # 1. INCOME
     if amount > 0:
         if any(word in desc for word in ["salary", "scholarship", "income","interest","dividend","pension","bonus","reward","project","payout","freelancer","consulting","invoice"]):
             return "Income"
+    if amount > 0 and "neft cr" in desc:
+        return "Income"
         
     if amount > 0 and "transfer" in desc:
         return "Transfer"
 
-    # 2. TRANSFER (only people)
-    if is_person_name(merchant):
-        return "Transfer"
+    
     
     if "loan disbursal" in desc or "disbursal" in desc:
         return "Income"
 
-    if "emi" in desc or "repayment" in desc:
-        return "Financial"
+    
+    
 
     # ---------------- SUBSCRIPTION (EARLY CATCH) ----------------
-    if "subscription" in desc or ("premium" in desc and "restaurant" not in desc):
+    SUBSCRIPTION_KEYWORDS = ["subscription", "netflix", "spotify", "prime", "youtube", "hotstar"]
+
+    if any(word in desc for word in SUBSCRIPTION_KEYWORDS):
         return "Subscription"
+
+    if "premium" in desc and "restaurant" not in desc and "hotel" not in desc:
+        return "Subscription"
+    
+    if "emi" in desc or "repayment" in desc:
+        return "Financial"
 
     # ---------------- RECHARGE (PRIORITY FIX) ----------------
     if "recharge" in desc:
         return "Bills"
 
+    
     # 3. STRONG MERCHANT RULES
     merchant_map = {
 
+    # ---------------- EDUCATION ----------------
+    "udemy": "Education",
+    "course": "Education",
+    "library": "Education",
+    "stationary": "Education",
+    # ---------------- SHOPPING ----------------
+    "croma": "Shopping",
+    "reliance digital": "Shopping",
+    "decathlon": "Shopping",
+    "h&m": "Shopping",
     # ---------------- SHOPPING / GROCERY ----------------
     "amazon": "Shopping",
     "flipkart": "Shopping",
     "myntra": "Shopping",
     "meesho": "Shopping",
-
+    # ---------------- SHOPPING PRIORITY FIX ----------------
+    "apple": "Shopping",
+    "apple india": "Shopping",
+    "apple store": "Shopping",
     "bigbasket": "Grocery",
     "dmart": "Grocery",
     "spar": "Grocery",
@@ -65,14 +107,11 @@ def classify_transaction(desc, merchant, amount):
     "supermarket": "Grocery",
     "kirana": "Grocery",
     "jiomart": "Grocery",
-    "store": "Grocery",
+    "provisional store": "Grocery",   # ✅ specific
+    "general store": "Grocery",       # ✅ specific
+    "grocery": "Grocery",  
     "blinkit": "Grocery",
 
-    # ---------------- EDUCATION ----------------
-    "udemy": "Education",
-    "course": "Education",
-    "library": "Education",
-    "stationary": "Education",
 
     # ---------------- FOOD ----------------
     "swiggy": "Food",
@@ -153,13 +192,6 @@ def classify_transaction(desc, merchant, amount):
 
     "donation": "Others",
     "temple": "Others",
-    # ---------------- SHOPPING ----------------
-    "apple": "Shopping",
-    "croma": "Shopping",
-    "reliance digital": "Shopping",
-    "decathlon": "Shopping",
-    "h&m": "Shopping",
-    "apple india store": "Shopping",
 
     # ---------------- SUBSCRIPTIONS ----------------
     "figma": "Subscription",
@@ -179,14 +211,24 @@ def classify_transaction(desc, merchant, amount):
 }
 
     for key in merchant_map:
-        if key in merchant or key in desc:
+        if key in merchant:
             return merchant_map[key]
+
+        if key in desc:
+            return merchant_map[key]
+        
+        if "youtube" in desc:
+           return "Subscription"
+            # return merchant_map[key]
 
     # 4. DB lookup (optional fallback)
     # db_category = get_category_from_db(merchant)
     # if db_category:
     #     return db_category
 
+    # 2. TRANSFER (only people)
+    if is_transfer(desc, merchant):
+        return "Transfer"
     # 5. FINAL FALLBACK
     return "Others"
 
@@ -197,14 +239,26 @@ def classify_transaction(desc, merchant, amount):
 
 def categorize(transactions):
 
+    NORMALIZATION_MAP = {
+        "swiggy instamart": "swiggy",
+        "swiggy food": "swiggy",
+        "zomato online": "zomato",
+        "amazon pay": "amazon",
+    }
+
+    # merchant = NORMALIZATION_MAP.get(merchant, merchant)
+    merchant_memory = {}
     for t in transactions:
         desc = t["description"]
         amount = t["amount"]
 
         merchant = extract_merchant(desc)
-
+        merchant = NORMALIZATION_MAP.get(merchant, merchant)
+        if merchant in merchant_memory:
+            t["category"] = merchant_memory[merchant]
+            continue
         category = classify_transaction(desc, merchant, amount)
-
+        merchant_memory[merchant] = category
         t["category"] = category
 
         # DEBUG

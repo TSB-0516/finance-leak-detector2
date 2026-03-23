@@ -34,10 +34,14 @@ def generate_insights(analysis):
     )
 
     ratio = discretionary / total_spend
-    if ratio > 0.6:
+    if spend("Shopping") > 100000:
+        insights.append("Very high shopping spend detected (major purchases)")
+    elif ratio > 0.6:
         insights.append(f"High discretionary spending ({int(ratio*100)}% of total spend)")
     elif ratio > 0.4:
         insights.append(f"Moderate discretionary spending ({int(ratio*100)}%)")
+
+
 
     subscription_spend = spend("Subscription")
 
@@ -87,8 +91,14 @@ def generate_insights(analysis):
     # -----------------------------
     small_txn_count = 0
 
-    for t in analysis.get("transactions_sample", []):
-        if abs(t.get("amount", 0)) < 200:
+    for t in analysis.get("all_transactions", []):
+        if t.get("type") != "debit":
+            continue
+        if (
+            t.get("type") == "debit"
+            and t.get("category") not in ["Transfer", "Income"]
+            and abs(t.get("amount", 0)) < 200
+        ):
             small_txn_count += 1
 
     if small_txn_count > 50:
@@ -101,7 +111,7 @@ def generate_insights(analysis):
     transfer_amt = spend("Transfer")
 
     if transfer_amt > total_spend * 0.3:
-        insights.append(f"High transfer activity (₹{int(transfer_amt)}) — potential low savings retention")
+        insights.append(f"High transfer activity (₹{int(transfer_amt)}) — frequent money movement detected")
 
 
     # -----------------------------
@@ -115,3 +125,82 @@ def generate_insights(analysis):
         insights.append("Moderate income inflow detected")
 
     return insights
+
+def get_top_leak_category(analysis):
+    """
+    Returns the category with highest spending.
+
+    Output:
+    {
+        "category": "Food",
+        "amount": 27482
+    }
+    """
+
+    totals = analysis.get("category_totals", {})
+
+    # Filter valid spending categories
+    LEAK_CATEGORIES = [
+        "Food",
+        "Shopping",
+        "Subscription",
+        "Cash Withdrawal",
+        "Others"
+    ]
+
+    filtered = {}
+
+    for category, amount in totals.items():
+        if category not in LEAK_CATEGORIES:
+            continue
+
+        filtered[category] = abs(amount)
+
+    if not filtered:
+        return None
+
+    # Find max category
+    top_category = max(filtered, key=filtered.get)
+
+    return {
+        "category": top_category,
+        "amount": int(filtered[top_category])
+    }
+
+def get_top_leak_categories(analysis, top_n=3):
+    """
+    Returns top N leak categories sorted by amount.
+
+    Output:
+    [
+        {"category": "Cash Withdrawal", "amount": 58000},
+        {"category": "Food", "amount": 10888},
+        {"category": "Subscription", "amount": 6144}
+    ]
+    """
+
+    totals = analysis.get("category_totals", {})
+
+    LEAK_CATEGORIES = [
+        "Food",
+        "Shopping",
+        "Subscription",
+        "Cash Withdrawal",
+        "Others"
+    ]
+
+    leak_list = []
+
+    for category, amount in totals.items():
+        if category not in LEAK_CATEGORIES:
+            continue
+
+        leak_list.append({
+            "category": category,
+            "amount": abs(amount)
+        })
+
+    # Sort descending
+    leak_list.sort(key=lambda x: x["amount"], reverse=True)
+
+    return leak_list[:top_n]
