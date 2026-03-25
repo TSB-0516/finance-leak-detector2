@@ -53,5 +53,20 @@ def calculate_score(analysis):
     # Cash withdrawal penalty (untracked money)
     score += min(spend("Cash Withdrawal") / 2000, 10)
 
+    score = int(min(score, 100))
+
+    band = "low"
+    if score > 70:
+        band = "severe"
+    elif score > 40:
+        band = "moderate"
+
+    return {
+        "score": score,
+        "band": band
+    }
+
     # -----------------------------
-    return int(min(score, 100))
+    # return {"score":score,"band":}
+
+    

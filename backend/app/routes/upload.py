@@ -5,6 +5,7 @@ import os
 from app.services import parser, cleaner, categorizer, analyzer, scorer
 from app.services.insights import generate_insights, get_top_leak_category, get_top_leak_categories
 from app.services.explainer import generate_explanations, generate_leak_breakdown
+from app.routes.dashboard import store_analysis
 
 router = APIRouter()
 
@@ -28,7 +29,8 @@ async def analyze_file(file: UploadFile = File(...), view: str = "full"):
     print("CATEGORIZED COUNT:", len(categorized))
 
     analysis = analyzer.analyze(categorized)
-    score = scorer.calculate_score(analysis)
+    store_analysis(analysis)  # Store for dashboard access
+    score_data = scorer.calculate_score(analysis)
     insights = generate_insights(analysis)
 
     explanations = generate_explanations(categorized, analysis)
@@ -51,7 +53,7 @@ async def analyze_file(file: UploadFile = File(...), view: str = "full"):
     # ---------------- VIEW HANDLING ----------------
 
     if view == "score":
-        return {"leak_score": score}
+        return {"leak_score": score_data["score"]}
 
     if view == "insights":
         return {"insights": insights}
@@ -82,7 +84,8 @@ async def analyze_file(file: UploadFile = File(...), view: str = "full"):
     return {
         "transactions": categorized,
         "analysis": analysis,
-        "leak_score": score,
+        "leak_score": score_data["score"],
+        "score_band": score_data["band"],
         "insights": insights,
         "explanations": explanations,
         "spending_breakdown": spending_breakdown,
