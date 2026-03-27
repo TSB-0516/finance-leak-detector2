@@ -1,104 +1,85 @@
-import { NavLink } from 'react-router-dom';
+import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { useLocation, Link } from 'react-router-dom'
+import { LayoutDashboard, BarChart3, TrendingUp, List, ChevronLeft } from 'lucide-react'
 
-const navItems = [
-  {
-    to: '/dashboard',
-    label: 'Dashboard',
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z" />
-      </svg>
-    ),
-  },
-  {
-    to: '/breakdown',
-    label: 'Breakdown',
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-      </svg>
-    ),
-  },
-  {
-    to: '/trends',
-    label: 'Trends',
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-      </svg>
-    ),
-  },
-  {
-    to: '/transactions',
-    label: 'Transactions',
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-      </svg>
-    ),
-  },
-];
+export default function Sidebar() {
+  const [isOpen, setIsOpen] = useState(true)
+  const location = useLocation()
 
-export default function Sidebar({ isOpen, onClose }) {
+  const menuItems = [
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Breakdown', path: '/dashboard/breakdown', icon: BarChart3 },
+    { label: 'Trends', path: '/dashboard/trends', icon: TrendingUp },
+    { label: 'Transactions', path: '/dashboard/transactions', icon: List },
+  ]
+
+  const isActive = (path) => location.pathname === path
+
   return (
-    <>
-      {/* Mobile overlay */}
+    <motion.aside
+      initial={{ x: -250 }}
+      animate={{ x: 0 }}
+      className={`${
+        isOpen ? 'w-64' : 'w-24'
+      } transition-all duration-300 h-screen bg-gradient-premium border-r border-slate-700 sticky top-0 flex flex-col backdrop-blur-xl`}
+    >
+      {/* Header */}
+      <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+        {isOpen && (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">FL</span>
+            </div>
+            <span className="text-white font-bold">FlexLeak</span>
+          </div>
+        )}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+        >
+          <ChevronLeft className={`w-5 h-5 text-slate-400 transition-transform ${!isOpen ? 'rotate-180' : ''}`} />
+        </motion.button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-2">
+        {menuItems.map((item) => {
+          const Icon = item.icon
+          const active = isActive(item.path)
+
+          return (
+            <Link key={item.path} to={item.path}>
+              <motion.div
+                whileHover={{ x: 4 }}
+                whileTap={{ scale: 0.95 }}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${
+                  active
+                    ? 'bg-emerald-600 text-white shadow-lg'
+                    : 'text-slate-400 hover:bg-slate-800'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {isOpen && <span className="text-sm font-medium">{item.label}</span>}
+              </motion.div>
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Footer */}
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={onClose}
-        />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="p-4 border-t border-slate-700 text-xs text-slate-500 text-center"
+        >
+          <p>v1.0.0</p>
+          <p className="mt-1">Powered by AI</p>
+        </motion.div>
       )}
-
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed top-0 left-0 z-50 h-full w-60 bg-surface-card border-r border-surface-border
-          flex flex-col transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0 md:static md:z-auto
-        `}
-      >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-6 border-b border-surface-border">
-          <div className="w-8 h-8 rounded-lg bg-accent-primary flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-sm font-semibold text-text-primary tracking-tight">Finance Leak</h1>
-            <p className="text-xs text-text-muted">Detector</p>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-surface-raised text-accent-glow'
-                    : 'text-text-muted hover:text-text-primary hover:bg-surface-raised'
-                }`
-              }
-            >
-              {item.icon}
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-surface-border">
-          <p className="text-xs text-text-faint">v1.0.0 · Rule-based engine</p>
-        </div>
-      </aside>
-    </>
-  );
+    </motion.aside>
+  )
 }

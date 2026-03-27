@@ -1,67 +1,34 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AnalysisProvider, useAnalysis } from './context/AnalysisContext';
-import UploadPage from './pages/UploadPage';
-import DashboardPage from './pages/DashboardPage';
-import BreakdownPage from './pages/BreakdownPage';
-import TrendsPage from './pages/TrendsPage';
-import TransactionsPage from './pages/TransactionsPage';
-import AppShell from './components/layout/AppShell';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useState } from 'react'
+import Upload from './pages/Upload'
+import DashboardLayout from './layouts/DashboardLayout'
+import Dashboard from './pages/Dashboard'
+import Breakdown from './pages/Breakdown'
+import Trends from './pages/Trends'
+import Transactions from './pages/Transactions'
 
-function ProtectedRoute({ children }) {
-  const { analysisData } = useAnalysis();
-  if (!analysisData) {
-    return <Navigate to="/" replace />;
-  }
-  return <AppShell>{children}</AppShell>;
-}
+function App() {
+  const [analysisComplete, setAnalysisComplete] = useState(false)
 
-function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<UploadPage />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/breakdown"
-        element={
-          <ProtectedRoute>
-            <BreakdownPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/trends"
-        element={
-          <ProtectedRoute>
-            <TrendsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/transactions"
-        element={
-          <ProtectedRoute>
-            <TransactionsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+    <Router>
+      <Routes>
+        <Route 
+          path="/" 
+          element={<Upload onAnalysisComplete={() => setAnalysisComplete(true)} />} 
+        />
+        {analysisComplete && (
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="breakdown" element={<Breakdown />} />
+            <Route path="trends" element={<Trends />} />
+            <Route path="transactions" element={<Transactions />} />
+          </Route>
+        )}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
+  )
 }
 
-export default function App() {
-  return (
-    <AnalysisProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AnalysisProvider>
-  );
-}
+export default App
